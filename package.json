@@ -1,0 +1,31 @@
+{
+  "name": "chief-playbooks",
+  "version": "0.1.0",
+  "description": "Open-source Playbook Packs + a runner-agnostic reference runner for real-time call coaching (works in Chief, Claude Code, or this CLI).",
+  "type": "module",
+  "bin": {
+    "playbook": "./dist/cli.js"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test test/*.test.ts",
+    "validate": "tsx src/cli.ts validate",
+    "coach": "tsx src/cli.ts coach",
+    "demo": "tsx src/cli.ts coach packs/customer-discovery --transcript packs/customer-discovery/fixtures/sample-transcript.txt"
+  },
+  "dependencies": {
+    "yaml": "^2.5.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2"
+  },
+  "license": "MIT",
+  "author": "Ansh Vasani"
+}

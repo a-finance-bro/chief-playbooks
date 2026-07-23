@@ -1,0 +1,16 @@
+Founder: Thanks for making the time, Priya. I want to learn how your team works, I'm honestly not here to sell you anything today. Cool if I just ask questions?
+Priya: Yeah of course, go for it, happy to talk through how we actually do things.
+Founder: To set context, tell me about your role and what a normal week looks like.
+Priya: I'm the ops lead at a 60-person startup, and a normal week is mostly coordinating across teams and pulling together the weekly status report for leadership.
+Founder: What's the most annoying part of putting that report together?
+Priya: Honestly the problem is chasing everyone for updates. Like just last week, a specific example, I spent basically all of Thursday pinging people across Slack, Notion and Linear to figure out what actually shipped.
+Founder: How often does that happen, and what does it cost you when it does?
+Priya: It happens every single week so pretty often, and when the numbers come out wrong it costs me hours of time and honestly real credibility and money when leadership makes a call on bad data.
+Founder: What do you do about it today?
+Priya: Right now my current workaround is a giant spreadsheet I update by hand, but it falls short constantly because it's stale the moment I finish it.
+Founder: Have you looked for something better?
+Priya: Yeah, we're actively trying to solve this. I've trialed two tools and even asked eng to build something internal, so there's real pull here, it's not just an opinion I'm venting.
+Founder: Would it make sense to grab 30 minutes next week to go deeper, and could you intro me to whoever owns this?
+Priya: Definitely, let's get a meeting on the calendar for next week, and I'll intro you to our COO who owns this. Happy to help pilot something too.
+Founder: This was super helpful. Anything I should have asked but didn't, and who else should I talk to?
+Priya: You covered it well. Definitely talk to a couple of my peers, other ops people at similar startups, and I can send you a few follow ups over email.

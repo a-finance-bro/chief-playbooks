@@ -1,0 +1,13 @@
+id: customer-discovery
+title: Customer Discovery
+version: 0.1.0
+summary: Run high-signal customer discovery calls that end in a real commitment, not a polite "sounds great."
+use_cases:
+  - A founder validating a problem before building anything
+  - A PM running jobs-to-be-done interviews
+  - Anyone testing whether a pain is real, frequent, and worth paying to fix
+playbooks:
+  - customer-discovery-call
+authors:
+  - Ansh Vasani
+tags: [discovery, product, research, sales]
