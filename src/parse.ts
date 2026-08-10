@@ -107,8 +107,19 @@ export function parsePlaybook(src: string): Playbook {
   const { data, body } = splitFrontmatter(src);
   const s = sectionize(body);
   const { objective, successCriteria } = parseObjective(s["objective"] ?? "");
+  // Frontmatter is written snake_case (YAML convention); the typed object is
+  // camelCase. Only the multi-word keys need mapping.
+  const { when_to_use: fmWhenToUse, ...rest } = data as Record<string, unknown>;
   const candidate = {
-    ...data,
+    ...rest,
+    // "When to use" may live in frontmatter or as its own section. The section
+    // is preferred, since it keeps the cues readable next to the prose they
+    // describe; frontmatter stays supported for generated files.
+    whenToUse: s["when to use"]
+      ? topBullets(s["when to use"])
+      : Array.isArray(fmWhenToUse)
+        ? (fmWhenToUse as string[])
+        : [],
     objective,
     successCriteria,
     principles: parsePrinciples(s["principles"] ?? ""),
@@ -133,7 +144,10 @@ export function loadPack(dir: string): LoadedPack {
     if (!existsSync(file)) throw new Error(`Pack "${pack.id}" references missing playbook: ${id}.md`);
     const pb = loadPlaybookFile(file);
     if (pb.id !== id) throw new Error(`Playbook id "${pb.id}" doesn't match filename "${id}.md"`);
-    return pb;
+    // Stamp the owning pack so a playbook handed to an agent on its own still
+    // resolves back to the pack it belongs to. An explicit `pack:` in the file
+    // wins, so a playbook can be vendored into another pack deliberately.
+    return pb.pack ? pb : { ...pb, pack: pack.id };
   });
   return { pack, playbooks, dir };
 }

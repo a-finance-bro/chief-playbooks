@@ -1,4 +1,4 @@
-# Playbook Pack Spec — v0.1
+# Playbook Pack Spec — v0.2
 
 A **Playbook** is a plain-English operating guide for one kind of live conversation
 (a customer discovery call, a 1:1, a hiring screen). A **Pack** is a bundle of
@@ -20,6 +20,10 @@ Design tenets:
   like* first, then how to get there — so a model can always orient toward the goal.
 - **Composable + versioned.** Packs compose (personal → project → team → org), and
   every playbook carries a version + lineage so improvements are traceable.
+- **A superset of a skill, not a new format.** A playbook is the same envelope any
+  other agent object uses (`type`, `id`, `version`) plus the few fields a playbook
+  needs. A host can store playbooks next to skills and route on `type` rather than
+  sniffing at the shape. Nothing here is a heavyweight DSL.
 
 ---
 
@@ -38,11 +42,14 @@ packs/
 ```yaml
 id: customer-discovery          # kebab-case, unique
 title: Customer Discovery
-version: 0.1.0                   # semver
+version: 0.2.0                   # semver
 summary: Run high-signal discovery calls that end in a real commitment.
-use_cases:
+use_cases:                      # human-facing, shown in a pack picker
   - Founder validating a problem before building
   - PM running "jobs to be done" interviews
+call_types:                     # machine-facing, used to classify a live call
+  - customer discovery call
+  - user interview
 playbooks:                      # files in this pack, in suggested order
   - customer-discovery-call
 authors:
@@ -56,18 +63,47 @@ tags: [discovery, product, research]
 
 ```yaml
 ---
+type: playbook       # the object kind; a playbook is a skills-superset
 id: customer-discovery-call
 title: Customer Discovery Call
-version: 0.1.0
+version: 0.2.0
 summary: Coach a founder through a high-signal discovery call.
 tags: [discovery, product, sales]
 authors: [Ansh Vasani]
 lineage: []          # prior generations this was forked/improved from
+
+pack: customer-discovery              # owning pack; filled in at load time if omitted
+persona: product-manager              # optional: who receives the finished outputs
+skills: [transcript-summary]          # optional: capabilities a runner may use
 ---
 ```
 
+`type`, `pack`, `persona`, and `skills` are what make a playbook a **first-class,
+addressable object** rather than a file that only means something inside this repo:
+a host can store it, serve it over an API, and hand it to any agent, and the object
+still says what it is, where it came from, and who its output is for.
+
+`persona` and `skills` are advisory. A runner that has no personas ignores them and
+loses nothing.
+
 **Body** — a fixed set of `##` sections. A runner keys off these exact headings; the
 content inside each is human prose.
+
+### `## When to use`
+Bulleted cues describing the conversations this playbook is for, and (prefixed with
+"Not") the ones it isn't. A host classifies a call from its opening turns and offers
+the matching pack, so these cues are what let the right playbook show up *before*
+someone thinks to pick it — which matters, because the first minutes of a call are
+exactly the part a playbook most wants to shape.
+
+Write them as prose. They're meant to be matched by a model reading the transcript;
+the reference implementation (`suggestPack`) ships a lexical baseline that reads the
+same field. Exclusions carry real weight: "Not a demo or a pricing negotiation" is
+far more precise than any inclusion cue.
+
+Suggestion is a **ranking, not a decision**. A runner should offer, not silently
+apply — a wrong playbook applied quietly steers a real conversation toward the wrong
+objective.
 
 ### `## Objective`
 One declarative paragraph: the end-state that makes this conversation a success.
@@ -108,6 +144,17 @@ A conformant runner MUST:
    suggested asks + avoids, progress, and the next best action.
 4. Emit the filled-in **Outputs** as structured data when the session ends.
 
-A runner MAY do step-advancement and output-detection with simple rules (offline) or
-with a model reading the transcript (adaptive). Both modes are demonstrated in this
-repo's reference runner; the file format is identical either way.
+A conformant runner MAY:
+- **Classify and suggest.** Read the opening turns, rank packs by their `When to use`
+  cues and `call_types`, and *offer* the best match. Offer, never auto-apply silently.
+- **Dock more than one playbook at once.** Playbooks are independent objects; a
+  session can run several (say a sales playbook plus a personal-operating one) and
+  show each as its own panel. Nothing in this format assumes exclusivity.
+- **Refresh on a cadence rather than per turn.** The reference runner steps per
+  utterance because that's reproducible in a test; a live runner is expected to
+  recompute the card every 10–20 seconds instead.
+- **Route the outputs to a `persona`** for post-session synthesis, so a summary is
+  organised around the playbook's objective rather than generic to-dos.
+- Do step-advancement and output-detection with simple rules (offline) or with a
+  model reading the transcript (adaptive). Both modes are demonstrated in this repo's
+  reference runner; the file format is identical either way.

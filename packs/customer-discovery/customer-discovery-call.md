@@ -1,12 +1,24 @@
 ---
+type: playbook
 id: customer-discovery-call
 title: Customer Discovery Call
-version: 0.1.0
+version: 0.2.0
 summary: Coach a founder through a high-signal discovery call — learn about the person's real life and problems, not their opinion of your idea, and leave with a concrete commitment.
 tags: [discovery, product, sales, research]
 authors: [Ansh Vasani]
 lineage: []
+pack: customer-discovery
+persona: product-manager
+skills: [transcript-summary, entity-extraction]
 ---
+
+## When to use
+
+- A first conversation with a potential user or customer, where nothing has been built for them yet.
+- The speaker is trying to learn whether a problem is real, frequent, and expensive.
+- Someone says they want to "validate an idea", "talk to users", or run "jobs to be done" interviews.
+- Early turns sound like "tell me how you currently…", "walk me through your workflow", "what do you use today".
+- Not a demo, a pitch, a pricing negotiation, or a renewal conversation.
 
 ## Objective
 

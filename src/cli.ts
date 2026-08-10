@@ -12,6 +12,9 @@ import {
   type Utterance,
 } from "./index.js";
 import { adviseWithModel, hasModelKey } from "./llm.js";
+import { suggestPack } from "./classify.js";
+import { readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 
 // Tiny ANSI helpers (no dependency).
 const c = {
@@ -98,15 +101,43 @@ async function cmdCoach(dir: string, args: string[]): Promise<void> {
   );
 }
 
+// Rank the packs in a directory against the opening of a conversation. This is
+// the pre-session half of the product: the pack should find you, not the other
+// way round.
+function cmdSuggest(packsDir: string, args: string[]): void {
+  const file = flag(args, "transcript");
+  if (!file) throw new Error("suggest needs --transcript <file>");
+  const opening = readFileSync(file, "utf8");
+
+  const dirs = readdirSync(packsDir)
+    .map((d) => join(packsDir, d))
+    .filter((d) => statSync(d).isDirectory());
+  const packs = dirs.map((d) => loadPack(d));
+
+  const ranked = suggestPack(packs, opening);
+  if (ranked.length === 0) {
+    console.log(c.dim("No pack confidently matches this conversation. Leaving it unset."));
+    return;
+  }
+  console.log(c.bold(`\nSuggested packs (${ranked.length}):`));
+  for (const r of ranked) {
+    console.log(`  ${c.green("→")} ${c.bold(r.packId)} / ${r.playbookId}  ${c.dim(`score ${r.score}`)}`);
+    for (const m of r.matched.slice(0, 2)) console.log(c.dim(`      matched: ${m}`));
+  }
+  console.log(c.dim("\nA host should OFFER the top match, not apply it silently."));
+}
+
 async function main(): Promise<void> {
   const [cmd, dir, ...rest] = process.argv.slice(2);
   try {
     if (cmd === "validate" && dir) return cmdValidate(dir);
     if (cmd === "coach" && dir) return await cmdCoach(dir, rest);
+    if (cmd === "suggest" && dir) return cmdSuggest(dir, rest);
     console.log(
       `playbook — run open Playbook Packs\n\n` +
         `  playbook validate <packDir>\n` +
-        `  playbook coach <packDir> [--playbook <id>] [--transcript <file>] [--llm]\n`,
+        `  playbook coach <packDir> [--playbook <id>] [--transcript <file>] [--llm]\n` +
+        `  playbook suggest <packsDir> --transcript <file>\n`,
     );
     process.exit(cmd ? 1 : 0);
   } catch (err) {
