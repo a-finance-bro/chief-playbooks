@@ -13,3 +13,4 @@ export {
   type ModelAdvice,
 } from "./coach.js";
 export { adviseWithModel, hasModelKey } from "./llm.js";
+export { suggestPack, type PackSuggestion } from "./classify.js";

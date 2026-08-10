@@ -14,9 +14,9 @@ This repo is **runner-agnostic**. The same playbook file works in [Chief](https:
 in Claude Code, or via the small reference runner included here. The format is the
 contract; see **[SPEC.md](./SPEC.md)**.
 
-> Status: v0.1 — the spec, one flagship pack (**Customer Discovery Call**), and a
-> reference runner (offline rules + optional model-driven coaching). Built by
-> Ansh Vasani; contributions welcome.
+> Status: v0.2 — the spec, one flagship pack (**Customer Discovery Call**), pack
+> suggestion from a call's opening, and a reference runner (offline rules + optional
+> model-driven coaching). Built by Ansh Vasani; contributions welcome.
 
 ## Try it (no API key needed)
 
@@ -25,6 +25,9 @@ npm install
 
 # validate a pack against the spec
 npm run validate packs/customer-discovery
+
+# from a call's opening lines, rank which pack should be offered
+npx tsx src/cli.ts suggest packs --transcript packs/customer-discovery/fixtures/sample-transcript.txt
 
 # replay a sample discovery call and watch the live coaching + captured outputs
 npm run demo
@@ -56,7 +59,8 @@ console.log(finalize(pb, state)); // structured outputs
 ## How it maps to Chief's Live Sessions
 
 The idea: before a Live Session you load a **playbook pack** (the same way you'd load a
-label pack). During the call a coaching panel shows the playbook's objective and the
+label pack), or the session classifies the call from its opening turns and offers the
+right pack for you. During the call a coaching panel shows the playbook's objective and the
 next best question, adapts as the conversation moves, and produces the pack's outputs
 (commitments, next steps, a decision summary) when you're done — turning conversation
 "dirt" into structured "gold." This repo is where those packs live and get better

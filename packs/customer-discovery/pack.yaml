@@ -1,11 +1,16 @@
 id: customer-discovery
 title: Customer Discovery
-version: 0.1.0
+version: 0.2.0
 summary: Run high-signal customer discovery calls that end in a real commitment, not a polite "sounds great."
 use_cases:
   - A founder validating a problem before building anything
   - A PM running jobs-to-be-done interviews
   - Anyone testing whether a pain is real, frequent, and worth paying to fix
+call_types:
+  - customer discovery call
+  - user interview
+  - jobs-to-be-done interview
+  - problem validation call
 playbooks:
   - customer-discovery-call
 authors:
