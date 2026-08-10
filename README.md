@@ -15,8 +15,9 @@ in Claude Code, or via the small reference runner included here. The format is t
 contract; see **[SPEC.md](./SPEC.md)**.
 
 > Status: v0.2 — the spec, one flagship pack (**Customer Discovery Call**), pack
-> suggestion from a call's opening, and a reference runner (offline rules + optional
-> model-driven coaching). Built by Ansh Vasani; contributions welcome.
+> suggestion from a call's opening, import/export + lint tooling, and a reference
+> runner (offline rules + optional model-driven coaching). Built by Ansh Vasani;
+> contributions welcome.
 
 ## Try it (no API key needed)
 
@@ -28,6 +29,9 @@ npm run validate packs/customer-discovery
 
 # from a call's opening lines, rank which pack should be offered
 npx tsx src/cli.ts suggest packs --transcript packs/customer-discovery/fixtures/sample-transcript.txt
+
+# check the rules the schema doesn't enforce (will it actually coach anyone?)
+npx tsx src/cli.ts lint packs/customer-discovery
 
 # replay a sample discovery call and watch the live coaching + captured outputs
 npm run demo
@@ -43,6 +47,26 @@ For adaptive, model-driven coaching (what a production runner like Chief would d
 export ANTHROPIC_API_KEY=sk-ant-...
 npm run coach packs/customer-discovery -- --transcript packs/customer-discovery/fixtures/sample-transcript.txt --llm
 ```
+
+## Move playbooks in and out
+
+A playbook is a portable object, not a file that only means something in this repo.
+
+```bash
+# export a playbook a host can store, serve over an API, and hand to any agent
+npx tsx src/cli.ts export packs/customer-discovery --format json
+
+# write it back out as a spec-shaped Markdown file
+npx tsx src/cli.ts export packs/customer-discovery --format md --out playbook.md
+
+# turn an existing doc (an exported Google Doc, a wiki page) into a playbook draft
+npx tsx src/cli.ts import ./some-operating-doc.md --out packs/my-pack/my-playbook.md
+```
+
+The round trip is tested, not just claimed: parse → export → re-parse produces the
+identical object. Import is deliberately honest — anything it can't infer is left as
+an explicit `TODO` and reported, because a confidently-wrong playbook is worse than an
+obviously-unfinished one.
 
 ## Use it as a library
 
@@ -79,7 +103,8 @@ test/                         # tests
 
 Playbooks are plain Markdown — improve one, add a new pack, submit a PR. Each playbook
 carries a `version` and `lineage` so improvements are traceable across generations.
-See `SPEC.md` for the format and `npm run validate` to check your pack before opening a PR.
+See `SPEC.md` for the format. Before opening a PR, run `npm run validate` (will it
+load?) and `playbook lint` (will it actually coach anyone?).
 
 ## License
 

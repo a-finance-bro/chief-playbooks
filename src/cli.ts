@@ -13,6 +13,9 @@ import {
 } from "./index.js";
 import { adviseWithModel, hasModelKey } from "./llm.js";
 import { suggestPack } from "./classify.js";
+import { toJSON, toMarkdown, fromMarkdownDoc } from "./convert.js";
+import { lintPlaybook } from "./lint.js";
+import { writeFileSync } from "node:fs";
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
@@ -127,17 +130,87 @@ function cmdSuggest(packsDir: string, args: string[]): void {
   console.log(c.dim("\nA host should OFFER the top match, not apply it silently."));
 }
 
+function pickPlaybook(dir: string, args: string[]): Playbook {
+  const { pack, playbooks } = loadPack(dir);
+  const id = flag(args, "playbook");
+  const pb = id ? playbooks.find((p) => p.id === id) : playbooks[0];
+  if (!pb) throw new Error(`No playbook ${id ? `"${id}"` : ""} in pack "${pack.id}"`);
+  return pb;
+}
+
+// Export a playbook as a portable object a host can store and serve.
+function cmdExport(dir: string, args: string[]): void {
+  const pb = pickPlaybook(dir, args);
+  const fmt = flag(args, "format") ?? "json";
+  if (fmt !== "json" && fmt !== "md") throw new Error(`Unknown --format "${fmt}" (json|md)`);
+  const text = fmt === "json" ? toJSON(pb) : toMarkdown(pb);
+  const out = flag(args, "out");
+  if (out) {
+    writeFileSync(out, text);
+    console.log(c.green(`✓ wrote ${out}`));
+  } else {
+    console.log(text);
+  }
+}
+
+// Turn an arbitrary Markdown doc into a playbook draft.
+function cmdImport(file: string, args: string[]): void {
+  const { markdown, notes } = fromMarkdownDoc(readFileSync(file, "utf8"), {
+    id: flag(args, "id"),
+    title: flag(args, "title"),
+  });
+  const out = flag(args, "out");
+  if (out) {
+    writeFileSync(out, markdown);
+    console.log(c.green(`✓ wrote ${out}`));
+  } else {
+    console.log(markdown);
+  }
+  if (notes.length) {
+    console.error(c.amber("\nReview notes:"));
+    for (const n of notes) console.error(c.dim(`  • ${n}`));
+  }
+}
+
+// Lint: the rules the schema doesn't enforce.
+function cmdLint(dir: string): void {
+  const { playbooks } = loadPack(dir);
+  let warns = 0;
+  for (const pb of playbooks) {
+    const findings = lintPlaybook(pb);
+    console.log(c.bold(`\n${pb.id}`));
+    if (findings.length === 0) {
+      console.log(`  ${c.green("✓")} no findings`);
+      continue;
+    }
+    for (const f of findings) {
+      if (f.level === "warn") warns++;
+      const tag = f.level === "warn" ? c.amber("warn") : c.dim("info");
+      console.log(`  ${tag} ${c.dim(f.rule)}${f.where ? c.dim(` · ${f.where}`) : ""}`);
+      console.log(`       ${f.message}`);
+    }
+  }
+  console.log(c.dim(`\n${warns} warning(s). Lint never blocks loading.`));
+  if (warns > 0) process.exitCode = 1;
+}
+
 async function main(): Promise<void> {
   const [cmd, dir, ...rest] = process.argv.slice(2);
   try {
     if (cmd === "validate" && dir) return cmdValidate(dir);
     if (cmd === "coach" && dir) return await cmdCoach(dir, rest);
     if (cmd === "suggest" && dir) return cmdSuggest(dir, rest);
+    if (cmd === "lint" && dir) return cmdLint(dir);
+    if (cmd === "export" && dir) return cmdExport(dir, rest);
+    if (cmd === "import" && dir) return cmdImport(dir, rest);
     console.log(
       `playbook — run open Playbook Packs\n\n` +
         `  playbook validate <packDir>\n` +
         `  playbook coach <packDir> [--playbook <id>] [--transcript <file>] [--llm]\n` +
-        `  playbook suggest <packsDir> --transcript <file>\n`,
+        `  playbook suggest <packsDir> --transcript <file>\n` +
+        `  playbook lint <packDir>\n` +
+        `  playbook export <packDir> [--playbook <id>] [--format json|md] [--out <file>]\n` +
+        `  playbook import <doc.md> [--id <id>] [--title <t>] [--out <file>]\n`,
     );
     process.exit(cmd ? 1 : 0);
   } catch (err) {

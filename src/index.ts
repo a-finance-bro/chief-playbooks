@@ -14,3 +14,14 @@ export {
 } from "./coach.js";
 export { adviseWithModel, hasModelKey } from "./llm.js";
 export { suggestPack, type PackSuggestion } from "./classify.js";
+export {
+  toObject,
+  toJSON,
+  fromObject,
+  toMarkdown,
+  fromMarkdownDoc,
+  SCHEMA_VERSION,
+  type PlaybookObject,
+  type ImportResult,
+} from "./convert.js";
+export { lintPlaybook, type Finding } from "./lint.js";
