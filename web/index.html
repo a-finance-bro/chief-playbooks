@@ -80,6 +80,14 @@
     border: 1px solid var(--line); border-radius: 8px; padding: 11px;
     font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; resize: vertical;
   }
+  pre {
+    background: var(--panel2); border: 1px solid var(--line); border-radius: 8px;
+    padding: 14px; overflow: auto; max-height: 70vh; white-space: pre;
+    font: 12.5px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text);
+  }
+  pre .fm { color: var(--blue); }
+  pre .h { color: var(--accent); font-weight: 700; }
+  pre .b { color: var(--green); }
   .note { color: var(--dim); font-size: 13px; }
   .sug { border: 1px solid var(--line); border-radius: 9px; padding: 12px; margin-bottom: 9px; background: var(--panel2); }
   .sug .top { display: flex; gap: 9px; align-items: baseline; flex-wrap: wrap; }
@@ -101,6 +109,7 @@
   <button class="on" data-tab="live">Live coaching</button>
   <button data-tab="suggest">Pack suggestion</button>
   <button data-tab="book">The playbook</button>
+  <button data-tab="source">Markdown source</button>
 </nav>
 
 <main>
@@ -191,9 +200,29 @@
     </div>
   </section>
 
+  <!-- 4. RAW MARKDOWN -->
+  <section class="tab" id="tab-source">
+    <div class="card">
+      <h2>The playbook file, verbatim</h2>
+      <p class="note">
+        This is the whole thing. Not a config format, not a DSL, not generated from anything:
+        a Markdown file you can fork, edit in any editor, and review in a pull request. Everything
+        on the other tabs is read out of this one file.
+        <span id="spath" style="font-family:ui-monospace,Menlo,monospace"></span>
+      </p>
+      <div class="controls">
+        <button class="act ghost" id="copysrc">Copy</button>
+        <span class="note" id="scount"></span>
+      </div>
+      <pre id="src"></pre>
+    </div>
+  </section>
+
 </main>
 
-<script>
+<script type="module">
+import { initState, parseTranscript, stepRules, suggestPack } from "./runner.js";
+
 const $ = (id) => document.getElementById(id);
 let PACKS = [], pack = null, book = null, frames = [], at = -1, timer = null;
 
@@ -212,8 +241,9 @@ document.querySelectorAll("nav button").forEach((b) => {
 });
 
 async function boot() {
-  const r = await fetch("/api/packs").then((x) => x.json());
-  PACKS = r.packs;
+  const r = await fetch("./packs.json").then((x) => x.json());
+  // Reshape to what suggestPack expects: { pack, playbooks }.
+  PACKS = r.packs.map((p) => ({ ...p, playbooks: p.playbookObjects }));
   $("packsel").innerHTML = PACKS.map((p) => `<option value="${p.id}">${p.title}</option>`).join("");
   $("packsel").onchange = () => selectPack($("packsel").value);
   selectPack(PACKS[0].id);
@@ -225,18 +255,23 @@ function selectPack(id) {
   $("ver").textContent = "v" + book.version;
   $("sugtr").value = pack.fixture.split("\n").slice(0, 6).join("\n");
   renderBook();
+  renderSource();
   loadTimeline(pack.fixture);
 }
 
 // ---- live coaching
-async function loadTimeline(transcript) {
+function loadTimeline(transcript) {
   stop();
-  const r = await fetch("/api/timeline", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ packId: pack.id, playbookId: book.id, transcript }),
-  }).then((x) => x.json());
-  frames = r.frames;
+  // Same coach code the CLI runs, bundled for the browser. Deep-copy each card:
+  // stepRules mutates shared state, so keeping the live object would leave every
+  // frame showing the final card.
+  const state = initState(book);
+  frames = parseTranscript(transcript).map((u, i) => ({
+    i,
+    speaker: u.speaker,
+    text: u.text,
+    card: structuredClone(stepRules(book, state, u)),
+  }));
   $("scrub").max = String(Math.max(0, frames.length - 1));
   $("tr").innerHTML = frames
     .map((f) => `<div class="utt" data-i="${f.i}"><span class="who">${esc(f.speaker)}</span>${esc(f.text)}</div>`)
@@ -302,12 +337,12 @@ $("runmine").onclick = () => { const t = $("mytr").value.trim(); if (t) loadTime
 // ---- suggestion
 $("sugfix").onclick = () => { $("sugtr").value = pack.fixture.split("\n").slice(0, 6).join("\n"); };
 $("sugoff").onclick = () => { $("sugtr").value = OFFTOPIC; };
-$("dosug").onclick = async () => {
-  const r = await fetch("/api/suggest", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ transcript: $("sugtr").value }),
-  }).then((x) => x.json());
+$("dosug").onclick = () => {
+  // suggestPack reads pack.call_types and playbooks[].whenToUse, so it wants the
+  // { pack, playbooks } shape. The UI keeps the pack fields at the top level for
+  // convenience, so adapt here rather than reshaping everything the UI touches.
+  const input = PACKS.map((p) => ({ pack: p, playbooks: p.playbooks }));
+  const r = { suggestions: suggestPack(input, $("sugtr").value) };
   if (!r.suggestions.length) {
     $("sugout").innerHTML =
       `<div class="sug"><b>No pack suggested.</b><div class="why">Nothing matched confidently, so it stays unset rather than guessing. Applying the wrong playbook is worse than applying none.</div></div>`;
@@ -337,6 +372,36 @@ function renderBook() {
     (book.skills.length ? ` · <code>skills: ${book.skills.map(esc).join(", ")}</code>` : "") +
     `<br><br>The persona is who the finished outputs hand off to for post-session synthesis, so the summary is organised around the objective instead of generic to-dos.`;
 }
+
+function renderSource() {
+  const src = book.source ?? "";
+  $("spath").textContent = book.sourcePath ? ` (${book.sourcePath})` : "";
+  $("scount").textContent = `${src.split("\n").length} lines`;
+  // Escape first, then colourise. Doing it the other way round would let the
+  // file's own content inject markup into the page.
+  $("src").innerHTML = esc(src)
+    .split("\n")
+    .map((l) => {
+      if (/^(---|type:|id:|title:|version:|summary:|tags:|authors:|lineage:|pack:|persona:|skills:)/.test(l))
+        return `<span class="fm">${l}</span>`;
+      if (/^#{1,3}\s/.test(l)) return `<span class="h">${l}</span>`;
+      if (/^\s*-\s/.test(l)) return `<span class="b">${l}</span>`;
+      return l;
+    })
+    .join("\n");
+}
+
+$("copysrc").onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(book.source ?? "");
+    $("copysrc").textContent = "Copied";
+    setTimeout(() => ($("copysrc").textContent = "Copy"), 1200);
+  } catch {
+    // Clipboard needs a secure context; over plain http on a LAN it throws.
+    $("copysrc").textContent = "Select the text instead";
+    setTimeout(() => ($("copysrc").textContent = "Copy"), 1800);
+  }
+};
 
 function esc(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
