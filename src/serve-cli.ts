@@ -9,5 +9,5 @@ const arg = (n: string): string | undefined => {
 
 startServer({
   port: Number(arg("port") ?? process.env.PORT ?? 4000),
-  packsDir: arg("packs") ?? "packs",
+  dir: arg("dir") ?? "web",
 });

@@ -16,7 +16,9 @@
     "validate": "tsx src/cli.ts validate",
     "coach": "tsx src/cli.ts coach",
     "demo": "tsx src/cli.ts coach packs/customer-discovery --transcript packs/customer-discovery/fixtures/sample-transcript.txt",
-    "web": "tsx src/serve-cli.ts"
+    "web": "npm run build:web && tsx src/serve-cli.ts",
+    "build:web": "tsx src/build-web.ts",
+    "vercel-build": "npm run build:web"
   },
   "dependencies": {
     "yaml": "^2.5.1",
@@ -24,6 +26,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.7.4",
+    "esbuild": "^0.28.2",
     "tsx": "^4.19.1",
     "typescript": "^5.6.2"
   },
