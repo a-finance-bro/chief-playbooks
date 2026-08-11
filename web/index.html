@@ -80,18 +80,11 @@
     border: 1px solid var(--line); border-radius: 8px; padding: 11px;
     font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; resize: vertical;
   }
-  pre {
-    background: var(--panel2); border: 1px solid var(--line); border-radius: 8px;
-    padding: 13px; overflow: auto; max-height: 460px;
-    font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text);
-  }
   .note { color: var(--dim); font-size: 13px; }
   .sug { border: 1px solid var(--line); border-radius: 9px; padding: 12px; margin-bottom: 9px; background: var(--panel2); }
   .sug .top { display: flex; gap: 9px; align-items: baseline; flex-wrap: wrap; }
   .sug b { font-size: 15px; }
   .sug .why { color: var(--dim); font-size: 12.5px; margin-top: 6px; }
-  .warn { color: var(--accent); } .info { color: var(--dim); }
-  .lintrow { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.05); font-size: 13.5px; }
   code { background: var(--panel2); padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
 </style>
 </head>
@@ -108,8 +101,6 @@
   <button class="on" data-tab="live">Live coaching</button>
   <button data-tab="suggest">Pack suggestion</button>
   <button data-tab="book">The playbook</button>
-  <button data-tab="lint">Lint</button>
-  <button data-tab="export">Export</button>
 </nav>
 
 <main>
@@ -200,35 +191,6 @@
     </div>
   </section>
 
-  <!-- 4. LINT -->
-  <section class="tab" id="tab-lint">
-    <div class="card">
-      <h2>Lint</h2>
-      <p class="note">
-        Validation asks “will this load?”. Lint asks “will this actually coach anyone?”. A playbook can be
-        perfectly valid and still useless: one step, no cues, an objective nothing can be checked against.
-        Every rule fires on something a reviewer would otherwise catch by hand on a community PR.
-      </p>
-      <div id="lintout"></div>
-    </div>
-  </section>
-
-  <!-- 5. EXPORT -->
-  <section class="tab" id="tab-export">
-    <div class="card">
-      <h2>Export</h2>
-      <p class="note">
-        A playbook is a portable object, not a file that only means something in one repo. JSON is what a
-        host stores and serves; Markdown is what humans review in a pull request. The round trip is tested
-        in both directions, so a playbook survives leaving the repo and coming back.
-      </p>
-      <div class="controls">
-        <button class="act" id="expjson">JSON</button>
-        <button class="act ghost" id="expmd">Markdown</button>
-      </div>
-      <pre id="expout">Pick a format.</pre>
-    </div>
-  </section>
 </main>
 
 <script>
@@ -263,7 +225,6 @@ function selectPack(id) {
   $("ver").textContent = "v" + book.version;
   $("sugtr").value = pack.fixture.split("\n").slice(0, 6).join("\n");
   renderBook();
-  renderLint();
   loadTimeline(pack.fixture);
 }
 
@@ -361,7 +322,7 @@ $("dosug").onclick = async () => {
     .join("");
 };
 
-// ---- playbook + lint + export
+// ---- playbook
 function renderBook() {
   $("bobj").textContent = book.objective;
   $("bsucc").innerHTML = book.successCriteria.map((s) => `<li class="done">${esc(s)}</li>`).join("");
@@ -376,22 +337,6 @@ function renderBook() {
     (book.skills.length ? ` · <code>skills: ${book.skills.map(esc).join(", ")}</code>` : "") +
     `<br><br>The persona is who the finished outputs hand off to for post-session synthesis, so the summary is organised around the objective instead of generic to-dos.`;
 }
-
-function renderLint() {
-  const f = book.lint || [];
-  $("lintout").innerHTML = f.length
-    ? f.map((x) => `<div class="lintrow"><span class="${x.level}">${x.level}</span>
-        <code>${esc(x.rule)}</code>${x.where ? ` <span class="note">· ${esc(x.where)}</span>` : ""}
-        <div class="note">${esc(x.message)}</div></div>`).join("")
-    : `<p style="color:var(--green)">✓ No findings. This is the reference pack, so it's held to zero warnings — a reference that ships warnings just teaches people to ignore the linter.</p>`;
-}
-
-async function doExport(fmt) {
-  const r = await fetch(`/api/export?pack=${encodeURIComponent(pack.id)}&playbook=${encodeURIComponent(book.id)}&format=${fmt}`).then((x) => x.json());
-  $("expout").textContent = r.text;
-}
-$("expjson").onclick = () => doExport("json");
-$("expmd").onclick = () => doExport("md");
 
 function esc(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
