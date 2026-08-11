@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url";
 import { loadPack } from "./parse.js";
 import { initState, parseTranscript, stepRules, type CoachCard } from "./coach.js";
 import { suggestPack } from "./classify.js";
-import { lintPlaybook } from "./lint.js";
 import { toJSON, toMarkdown } from "./convert.js";
 import type { LoadedPack, Playbook } from "./schema.js";
 
@@ -130,7 +129,6 @@ export function startServer(opts: { port: number; packsDir: string }): void {
               outputs: pb.outputs,
               signals: pb.signals,
               principles: pb.principles,
-              lint: lintPlaybook(pb),
             })),
           })),
         });
