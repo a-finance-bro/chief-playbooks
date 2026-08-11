@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Playbook Packs — live call coaching</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #151b23; --panel2: #1c232c; --line: #2a323d;
+    --text: #e6edf3; --dim: #8b949e; --accent: #ffb02e; --green: #3fb950; --red: #f85149;
+    --blue: #58a6ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  header {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel);
+  }
+  header h1 { font-size: 16px; margin: 0; font-weight: 650; letter-spacing: -0.01em; }
+  header .tag {
+    font-size: 11px; color: var(--accent); border: 1px solid var(--accent);
+    border-radius: 999px; padding: 1px 8px; font-weight: 600;
+  }
+  header .spacer { flex: 1; }
+  nav { display: flex; gap: 4px; padding: 10px 20px 0; flex-wrap: wrap; }
+  nav button {
+    background: none; border: 1px solid transparent; color: var(--dim);
+    padding: 7px 13px; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 14px;
+    font-family: inherit;
+  }
+  nav button:hover { color: var(--text); }
+  nav button.on { color: var(--text); background: var(--panel); border-color: var(--line); border-bottom-color: var(--panel); }
+  main { padding: 0 20px 40px; }
+  .tab { display: none; } .tab.on { display: block; }
+
+  .grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.1fr); gap: 16px; align-items: start; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--dim); margin: 0 0 10px; }
+
+  /* The Live Insight panel: objective pinned, guidance below. */
+  .objective { font-size: 13.5px; color: var(--dim); border-left: 2px solid var(--accent); padding-left: 11px; margin-bottom: 14px; }
+  .steprow { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+  .steptitle { font-weight: 650; font-size: 16px; }
+  .pill { font-size: 11px; color: var(--dim); background: var(--panel2); border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px; }
+  .goal { color: var(--dim); font-size: 13.5px; margin-bottom: 12px; }
+  ul.asks { list-style: none; padding: 0; margin: 0 0 10px; }
+  ul.asks li { padding: 5px 0 5px 22px; position: relative; font-size: 14px; }
+  ul.asks li::before { content: "→"; position: absolute; left: 2px; color: var(--green); }
+  ul.avoid { list-style: none; padding: 0; margin: 0; }
+  ul.avoid li { padding: 3px 0 3px 22px; position: relative; color: var(--dim); font-size: 13px; }
+  ul.avoid li::before { content: "✕"; position: absolute; left: 2px; color: var(--red); }
+
+  .transcript { max-height: 420px; overflow-y: auto; }
+  .utt { padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,.04); font-size: 14px; opacity: .35; transition: opacity .15s; }
+  .utt.seen { opacity: 1; }
+  .utt.cur { opacity: 1; background: rgba(255,176,46,.07); border-radius: 6px; padding: 7px 9px; margin: 0 -9px; }
+  .utt .who { color: var(--accent); font-weight: 600; font-size: 12px; display: block; }
+
+  .outs { list-style: none; padding: 0; margin: 0; }
+  .outs li { padding: 6px 0 6px 26px; position: relative; color: var(--dim); font-size: 13.5px; }
+  .outs li::before { content: "○"; position: absolute; left: 4px; }
+  .outs li.done { color: var(--text); }
+  .outs li.done::before { content: "✓"; color: var(--green); }
+
+  .controls { display: flex; align-items: center; gap: 12px; margin: 14px 0; flex-wrap: wrap; }
+  button.act {
+    background: var(--accent); color: #000; border: 0; border-radius: 8px;
+    padding: 8px 16px; font-weight: 650; cursor: pointer; font-size: 14px; font-family: inherit;
+  }
+  button.ghost { background: var(--panel2); color: var(--text); border: 1px solid var(--line); }
+  input[type=range] { flex: 1; min-width: 160px; accent-color: var(--accent); }
+  textarea {
+    width: 100%; min-height: 130px; background: var(--panel2); color: var(--text);
+    border: 1px solid var(--line); border-radius: 8px; padding: 11px;
+    font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; resize: vertical;
+  }
+  pre {
+    background: var(--panel2); border: 1px solid var(--line); border-radius: 8px;
+    padding: 13px; overflow: auto; max-height: 460px;
+    font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text);
+  }
+  .note { color: var(--dim); font-size: 13px; }
+  .sug { border: 1px solid var(--line); border-radius: 9px; padding: 12px; margin-bottom: 9px; background: var(--panel2); }
+  .sug .top { display: flex; gap: 9px; align-items: baseline; flex-wrap: wrap; }
+  .sug b { font-size: 15px; }
+  .sug .why { color: var(--dim); font-size: 12.5px; margin-top: 6px; }
+  .warn { color: var(--accent); } .info { color: var(--dim); }
+  .lintrow { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.05); font-size: 13.5px; }
+  code { background: var(--panel2); padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Playbook Packs</h1>
+  <span class="tag" id="ver">v0.2</span>
+  <span class="note">open-source playbooks that coach a live call and turn it into structured output</span>
+  <span class="spacer"></span>
+  <select id="packsel" style="background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-family:inherit;"></select>
+</header>
+
+<nav>
+  <button class="on" data-tab="live">Live coaching</button>
+  <button data-tab="suggest">Pack suggestion</button>
+  <button data-tab="book">The playbook</button>
+  <button data-tab="lint">Lint</button>
+  <button data-tab="export">Export</button>
+</nav>
+
+<main>
+  <!-- 1. LIVE COACHING -->
+  <section class="tab on" id="tab-live">
+    <div class="controls">
+      <button class="act" id="play">▶ Play call</button>
+      <button class="act ghost" id="reset">Reset</button>
+      <input type="range" id="scrub" min="0" value="0" />
+      <span class="note" id="pos">0 / 0</span>
+      <select id="speed" style="background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-family:inherit;">
+        <option value="1600">1x</option>
+        <option value="900" selected>2x</option>
+        <option value="400">4x</option>
+      </select>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="card" id="panel">
+          <h2>Live Insight panel</h2>
+          <div class="objective" id="obj"></div>
+          <div class="steprow">
+            <span class="steptitle" id="stitle">—</span>
+            <span class="pill" id="prog"></span>
+          </div>
+          <div class="goal" id="goal"></div>
+          <ul class="asks" id="asks"></ul>
+          <ul class="avoid" id="avoid"></ul>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <h2>Outputs captured</h2>
+          <ul class="outs" id="outs"></ul>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Transcript</h2>
+        <div class="transcript" id="tr"></div>
+        <details style="margin-top:12px">
+          <summary class="note" style="cursor:pointer">Use your own transcript</summary>
+          <p class="note" style="margin:9px 0">One line per turn, <code>Speaker: what they said</code>.</p>
+          <textarea id="mytr" placeholder="Founder: Thanks for the time, tell me how you work today.&#10;Priya: Sure, most of my week is chasing people for status updates."></textarea>
+          <button class="act ghost" id="runmine" style="margin-top:9px">Run this transcript</button>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. SUGGESTION -->
+  <section class="tab" id="tab-suggest">
+    <div class="card">
+      <h2>Which pack should this call load?</h2>
+      <p class="note">
+        Paste the opening turns of a call. The host classifies it and <em>offers</em> the matching pack
+        before it's applied, so the playbook is running during the part of the call it can still shape.
+        It returns a ranking, never a decision: a wrong playbook applied silently steers a real
+        conversation toward the wrong objective.
+      </p>
+      <textarea id="sugtr"></textarea>
+      <div class="controls">
+        <button class="act" id="dosug">Classify</button>
+        <button class="act ghost" id="sugfix">Load the discovery sample</button>
+        <button class="act ghost" id="sugoff">Load an unrelated meeting</button>
+      </div>
+      <div id="sugout"></div>
+    </div>
+  </section>
+
+  <!-- 3. THE PLAYBOOK -->
+  <section class="tab" id="tab-book">
+    <div class="grid">
+      <div class="card">
+        <h2>Objective</h2>
+        <div id="bobj" style="font-size:14px"></div>
+        <h2 style="margin-top:16px">Success looks like</h2>
+        <ul class="outs" id="bsucc"></ul>
+        <h2 style="margin-top:16px">When to use <span style="text-transform:none;font-weight:400">(what classification matches on)</span></h2>
+        <ul class="outs" id="bwhen"></ul>
+      </div>
+      <div class="card">
+        <h2>Signals</h2>
+        <div id="bsig" style="font-size:13.5px"></div>
+        <h2 style="margin-top:16px">Principles</h2>
+        <div id="bprin" style="font-size:13.5px"></div>
+        <h2 style="margin-top:16px">Routing</h2>
+        <div class="note" id="bmeta"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. LINT -->
+  <section class="tab" id="tab-lint">
+    <div class="card">
+      <h2>Lint</h2>
+      <p class="note">
+        Validation asks “will this load?”. Lint asks “will this actually coach anyone?”. A playbook can be
+        perfectly valid and still useless: one step, no cues, an objective nothing can be checked against.
+        Every rule fires on something a reviewer would otherwise catch by hand on a community PR.
+      </p>
+      <div id="lintout"></div>
+    </div>
+  </section>
+
+  <!-- 5. EXPORT -->
+  <section class="tab" id="tab-export">
+    <div class="card">
+      <h2>Export</h2>
+      <p class="note">
+        A playbook is a portable object, not a file that only means something in one repo. JSON is what a
+        host stores and serves; Markdown is what humans review in a pull request. The round trip is tested
+        in both directions, so a playbook survives leaving the repo and coming back.
+      </p>
+      <div class="controls">
+        <button class="act" id="expjson">JSON</button>
+        <button class="act ghost" id="expmd">Markdown</button>
+      </div>
+      <pre id="expout">Pick a format.</pre>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let PACKS = [], pack = null, book = null, frames = [], at = -1, timer = null;
+
+const OFFTOPIC =
+  "Manager: Let's go through the sprint board and re-point the two stories that slipped.\n" +
+  "Dev: Sounds good, the deploy pipeline was red most of Tuesday.\n";
+
+// ---- tabs
+document.querySelectorAll("nav button").forEach((b) => {
+  b.onclick = () => {
+    document.querySelectorAll("nav button").forEach((x) => x.classList.remove("on"));
+    document.querySelectorAll(".tab").forEach((x) => x.classList.remove("on"));
+    b.classList.add("on");
+    $("tab-" + b.dataset.tab).classList.add("on");
+  };
+});
+
+async function boot() {
+  const r = await fetch("/api/packs").then((x) => x.json());
+  PACKS = r.packs;
+  $("packsel").innerHTML = PACKS.map((p) => `<option value="${p.id}">${p.title}</option>`).join("");
+  $("packsel").onchange = () => selectPack($("packsel").value);
+  selectPack(PACKS[0].id);
+}
+
+function selectPack(id) {
+  pack = PACKS.find((p) => p.id === id);
+  book = pack.playbooks[0];
+  $("ver").textContent = "v" + book.version;
+  $("sugtr").value = pack.fixture.split("\n").slice(0, 6).join("\n");
+  renderBook();
+  renderLint();
+  loadTimeline(pack.fixture);
+}
+
+// ---- live coaching
+async function loadTimeline(transcript) {
+  stop();
+  const r = await fetch("/api/timeline", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ packId: pack.id, playbookId: book.id, transcript }),
+  }).then((x) => x.json());
+  frames = r.frames;
+  $("scrub").max = String(Math.max(0, frames.length - 1));
+  $("tr").innerHTML = frames
+    .map((f) => `<div class="utt" data-i="${f.i}"><span class="who">${esc(f.speaker)}</span>${esc(f.text)}</div>`)
+    .join("");
+  seek(-1);
+}
+
+function seek(i) {
+  at = Math.max(-1, Math.min(frames.length - 1, i));
+  $("scrub").value = String(Math.max(0, at));
+  $("pos").textContent = `${at + 1} / ${frames.length}`;
+
+  document.querySelectorAll(".utt").forEach((el) => {
+    const n = +el.dataset.i;
+    el.classList.toggle("seen", n <= at);
+    el.classList.toggle("cur", n === at);
+  });
+  const cur = document.querySelector(".utt.cur");
+  if (cur) cur.scrollIntoView({ block: "nearest" });
+
+  if (at < 0) {
+    $("obj").textContent = book.objective;
+    $("stitle").textContent = "Not started";
+    $("prog").textContent = "";
+    $("goal").textContent = "";
+    $("asks").innerHTML = "";
+    $("avoid").innerHTML = "";
+    $("outs").innerHTML = book.outputs.map((o) => `<li>${esc(o)}</li>`).join("");
+    return;
+  }
+  const c = frames[at].card;
+  $("obj").textContent = c.objective;
+  $("stitle").textContent = `Step ${c.step.n}/${c.step.total}: ${c.step.title}`;
+  $("prog").textContent = c.progress;
+  $("goal").textContent = c.step.goal;
+  $("asks").innerHTML = c.step.ask.slice(0, 3).map((a) => `<li>${esc(a)}</li>`).join("");
+  $("avoid").innerHTML = c.step.avoid.slice(0, 2).map((a) => `<li>${esc(a)}</li>`).join("");
+  $("outs").innerHTML = c.outputs.map((o) => `<li class="${o.done ? "done" : ""}">${esc(o.text)}</li>`).join("");
+}
+
+function play() {
+  if (timer) return stop();
+  if (at >= frames.length - 1) seek(-1);
+  $("play").textContent = "❚❚ Pause";
+  const tick = () => {
+    if (at >= frames.length - 1) return stop();
+    seek(at + 1);
+    timer = setTimeout(tick, +$("speed").value);
+  };
+  timer = setTimeout(tick, 250);
+}
+function stop() {
+  if (timer) clearTimeout(timer);
+  timer = null;
+  $("play").textContent = "▶ Play call";
+}
+
+$("play").onclick = play;
+$("reset").onclick = () => { stop(); seek(-1); };
+$("scrub").oninput = (e) => { stop(); seek(+e.target.value); };
+$("runmine").onclick = () => { const t = $("mytr").value.trim(); if (t) loadTimeline(t); };
+
+// ---- suggestion
+$("sugfix").onclick = () => { $("sugtr").value = pack.fixture.split("\n").slice(0, 6).join("\n"); };
+$("sugoff").onclick = () => { $("sugtr").value = OFFTOPIC; };
+$("dosug").onclick = async () => {
+  const r = await fetch("/api/suggest", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ transcript: $("sugtr").value }),
+  }).then((x) => x.json());
+  if (!r.suggestions.length) {
+    $("sugout").innerHTML =
+      `<div class="sug"><b>No pack suggested.</b><div class="why">Nothing matched confidently, so it stays unset rather than guessing. Applying the wrong playbook is worse than applying none.</div></div>`;
+    return;
+  }
+  $("sugout").innerHTML = r.suggestions
+    .map(
+      (s) => `<div class="sug"><div class="top"><b>${esc(s.packId)}</b>
+      <span class="pill">${esc(s.playbookId)}</span><span class="pill">score ${s.score}</span></div>
+      <div class="why">matched: ${s.matched.map(esc).join("<br>matched: ")}</div></div>`,
+    )
+    .join("");
+};
+
+// ---- playbook + lint + export
+function renderBook() {
+  $("bobj").textContent = book.objective;
+  $("bsucc").innerHTML = book.successCriteria.map((s) => `<li class="done">${esc(s)}</li>`).join("");
+  $("bwhen").innerHTML = book.whenToUse.map((s) => `<li>${esc(s)}</li>`).join("");
+  $("bsig").innerHTML = book.signals.map((s) => `<p><b>${esc(s.name)}</b> — ${esc(s.text)}</p>`).join("");
+  $("bprin").innerHTML = book.principles
+    .map((p) => `<p><b style="color:${p.kind === "do" ? "var(--green)" : "var(--red)"}">${p.kind === "do" ? "Do" : "Don't"}</b> ${esc(p.text)}</p>`)
+    .join("");
+  $("bmeta").innerHTML =
+    `<code>type: playbook</code> · <code>pack: ${esc(pack.id)}</code>` +
+    (book.persona ? ` · <code>persona: ${esc(book.persona)}</code>` : "") +
+    (book.skills.length ? ` · <code>skills: ${book.skills.map(esc).join(", ")}</code>` : "") +
+    `<br><br>The persona is who the finished outputs hand off to for post-session synthesis, so the summary is organised around the objective instead of generic to-dos.`;
+}
+
+function renderLint() {
+  const f = book.lint || [];
+  $("lintout").innerHTML = f.length
+    ? f.map((x) => `<div class="lintrow"><span class="${x.level}">${x.level}</span>
+        <code>${esc(x.rule)}</code>${x.where ? ` <span class="note">· ${esc(x.where)}</span>` : ""}
+        <div class="note">${esc(x.message)}</div></div>`).join("")
+    : `<p style="color:var(--green)">✓ No findings. This is the reference pack, so it's held to zero warnings — a reference that ships warnings just teaches people to ignore the linter.</p>`;
+}
+
+async function doExport(fmt) {
+  const r = await fetch(`/api/export?pack=${encodeURIComponent(pack.id)}&playbook=${encodeURIComponent(book.id)}&format=${fmt}`).then((x) => x.json());
+  $("expout").textContent = r.text;
+}
+$("expjson").onclick = () => doExport("json");
+$("expmd").onclick = () => doExport("md");
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+boot();
+</script>
+</body>
+</html>

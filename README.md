@@ -24,6 +24,23 @@ contract; see **[SPEC.md](./SPEC.md)**.
 ```bash
 npm install
 
+# a web view of the whole loop — open http://localhost:4000
+npm run web
+```
+
+To share that with other people (no account, no signup):
+
+```bash
+npx -y cloudflared tunnel --url http://localhost:4000
+```
+
+The server holds **no session state**: it computes a transcript's whole timeline in one
+shot and the browser scrubs through it locally. So several people can open the same
+link at once, each with an independent playhead, and nobody's scrubbing moves anyone
+else's screen.
+
+```bash
+
 # validate a pack against the spec
 npm run validate packs/customer-discovery
 

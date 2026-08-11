@@ -15,7 +15,8 @@
     "test": "node --import tsx --test test/*.test.ts",
     "validate": "tsx src/cli.ts validate",
     "coach": "tsx src/cli.ts coach",
-    "demo": "tsx src/cli.ts coach packs/customer-discovery --transcript packs/customer-discovery/fixtures/sample-transcript.txt"
+    "demo": "tsx src/cli.ts coach packs/customer-discovery --transcript packs/customer-discovery/fixtures/sample-transcript.txt",
+    "web": "tsx src/serve-cli.ts"
   },
   "dependencies": {
     "yaml": "^2.5.1",
