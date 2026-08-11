@@ -165,12 +165,58 @@ export function startServer(opts: { port: number; packsDir: string }): void {
     }
   });
 
-  server.listen(opts.port, () => {
-    const packNames = packs.map((p) => p.pack.id).join(", ");
-    console.log(`\n  Playbook Packs demo`);
-    console.log(`  http://localhost:${opts.port}`);
-    console.log(`  packs: ${packNames}\n`);
-    console.log(`  Share it (no account needed):`);
-    console.log(`    npx -y cloudflared tunnel --url http://localhost:${opts.port}\n`);
-  });
+  // Port fallback.
+  //
+  // The default failure here is an unhandled 'error' event, which dumps a Node
+  // stack trace and exits. That is the single worst thing that can happen to
+  // this program, because the one moment it runs is in front of an audience —
+  // and "address already in use" is the most likely cause, since it usually
+  // means a copy from five minutes ago is still up and the demo would have
+  // worked fine on any other port.
+  //
+  // So a busy port is not an error. Step forward and say which port won.
+  const MAX_TRIES = 10;
+
+  const listen = (port: number, attempt: number): void => {
+    // Both listeners are registered explicitly and BOTH are torn down before a
+    // retry. Passing the success callback to server.listen() instead looks
+    // tidier but leaks: a failed listen does not remove it, so after falling
+    // forward one port the stale callback still fires and announces the port
+    // that never bound. That prints a dead URL, which on a shared demo link is
+    // worse than crashing.
+    const onError = (err: NodeJS.ErrnoException): void => {
+      server.removeListener("listening", onListening);
+      if (err.code === "EADDRINUSE" && attempt < MAX_TRIES) {
+        server.removeListener("error", onError);
+        console.log(`  port ${port} is busy, trying ${port + 1}...`);
+        listen(port + 1, attempt + 1);
+        return;
+      }
+      console.error(`\n  Couldn't start the demo: ${err.message}`);
+      if (err.code === "EADDRINUSE") {
+        console.error(`  Ports ${opts.port}-${port} are all in use.`);
+        console.error(`  Free one with:  lsof -ti:${opts.port} | xargs kill`);
+        console.error(`  Or pick another: npm run web -- --port 8080\n`);
+      } else {
+        console.error("");
+      }
+      process.exit(1);
+    };
+
+    const onListening = (): void => {
+      server.removeListener("error", onError);
+      const packNames = packs.map((p) => p.pack.id).join(", ");
+      console.log(`\n  Playbook Packs demo`);
+      console.log(`  http://localhost:${port}`);
+      console.log(`  packs: ${packNames}\n`);
+      console.log(`  Share it (no account needed):`);
+      console.log(`    npx -y cloudflared tunnel --url http://localhost:${port}\n`);
+    };
+
+    server.once("error", onError);
+    server.once("listening", onListening);
+    server.listen(port);
+  };
+
+  listen(opts.port, 0);
 }
