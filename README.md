@@ -19,6 +19,11 @@ contract; see **[SPEC.md](./SPEC.md)**.
 > runner (offline rules + optional model-driven coaching). Built by Ansh Vasani;
 > contributions welcome.
 
+## See it running
+
+**[chief-playbooks.vercel.app](https://chief-playbooks.vercel.app)** — the coaching loop,
+pack suggestion, the playbook, and the raw Markdown file it all comes from.
+
 ## Try it (no API key needed)
 
 ```bash
